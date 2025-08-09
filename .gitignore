@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.generated/
+.generated/*
+.generated
+.generated/**
+.generated
+.DS_Store
+.idea/
+.vscode/
+.generated
+.generated
+# project specific
+generated/
+*.zip
+*.pdf 
