@@ -1,8 +1,6 @@
 import os
 from datetime import datetime
-from fastapi import APIRouter
-from fastapi.responses import FileResponse
-from ..schemas import DocumentGenerateRequest
+from flask import Blueprint, request, send_file, jsonify
 from ..services.pdf_generator import (
     generate_tm1_pdf,
     generate_poa_pdf,
@@ -11,21 +9,26 @@ from ..services.pdf_generator import (
 from ..utils.zipper import zip_files
 from ..config import settings
 
-router = APIRouter()
+documents_bp = Blueprint('documents', __name__)
 
+@documents_bp.route('/generate', methods=['POST'])
+def generate_documents():
+    data = request.get_json()
+    intake = data.get('intake')
+    if not intake:
+        return jsonify({"error": "Missing 'intake' in request body"}), 400
 
-@router.post("/generate")
-async def generate_documents(req: DocumentGenerateRequest):
-    tm1 = generate_tm1_pdf(req.intake.model_dump())
-    poa = generate_poa_pdf(req.intake.model_dump())
-    guide = generate_filing_guide_pdf(req.intake.model_dump())
+    tm1 = generate_tm1_pdf(intake)
+    poa = generate_poa_pdf(intake)
+    guide = generate_filing_guide_pdf(intake)
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     zip_name = os.path.join(settings.generated_dir, f"Trademark_Package_{timestamp}.zip")
     zip_path = zip_files([tm1, poa, guide], zip_name)
 
-    return FileResponse(
+    return send_file(
         zip_path,
-        media_type="application/zip",
-        filename=os.path.basename(zip_path),
-    ) 
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=os.path.basename(zip_path),
+    )

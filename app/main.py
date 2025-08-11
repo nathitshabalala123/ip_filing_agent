@@ -1,30 +1,32 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from flask import Flask, jsonify
+from flask_cors import CORS
 from .config import settings
-from .routes.chat import router as chat_router
-from .routes.documents import router as documents_router
-from .routes.classification import router as classification_router
-from .routes.conflict import router as conflict_router
+from .routes.chat import chat_bp
+from .routes.documents import documents_bp
+from .routes.classification import classification_bp
+from .routes.conflict import conflict_bp
 
-app = FastAPI(
-    title="IP Filing Co-Pilot (ZA)",
-    description="Assistive tool for preparing CIPC trademark filing packages. Not a law firm.",
-    version="0.1.0",
-)
+def create_app():
+    app = Flask(
+        __name__,
+        static_folder=None,
+        template_folder=None
+    )
+    app.config['APP_TITLE'] = "IP Filing Co-Pilot (ZA)"
+    app.config['APP_DESCRIPTION'] = "Assistive tool for preparing CIPC trademark filing packages. Not a law firm."
+    app.config['APP_VERSION'] = "0.1.0"
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    # Enable CORS
+    CORS(app, supports_credentials=True)
 
-app.include_router(chat_router, prefix="/api/triage", tags=["triage"])
-app.include_router(classification_router, prefix="/api/classify", tags=["classification"])
-app.include_router(conflict_router, prefix="/api", tags=["conflict-check"])
-app.include_router(documents_router, prefix="/api/documents", tags=["documents"])
+    # Register blueprints (modular routes)
+    app.register_blueprint(chat_bp, url_prefix='/api/triage')
+    app.register_blueprint(classification_bp, url_prefix='/api/classify')
+    app.register_blueprint(conflict_bp, url_prefix='/api')
+    app.register_blueprint(documents_bp, url_prefix='/api/documents')
 
-@app.get("/")
-async def health() -> dict:
-    return {"status": "ok", "env": settings.app_env} 
+    @app.route("/", methods=["GET"])
+    def health():
+        return jsonify({"status": "ok", "env": settings.app_env})
+
+    return app
