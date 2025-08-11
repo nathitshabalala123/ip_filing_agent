@@ -3,6 +3,9 @@ from flask import Blueprint, request, jsonify
 from ..schemas import ClassificationRequest, ClassificationResponse, ClassificationSuggestion
 from ..services.classification import suggest_classes
 
+# Import or define triage_chat
+from ..services.classification import triage_chat
+
 router = APIRouter()
 classification_bp = Blueprint('classification', __name__)
 
